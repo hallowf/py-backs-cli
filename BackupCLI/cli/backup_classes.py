@@ -16,7 +16,9 @@ class BackupManager(object):
         except Exception as e:
             logger.critical("Missing path values, exiting...")
             sys.exit(1)
+        # Try to split path
         path_s = path_s.split(" ") if " " in path_s else path_s.split("\n")
+        # Remove any possible whitespaces
         path_s = [v for v in path_s if v != ""]
         self.path_s = path_s
         self.add_date = self.set_or_default("add_date")
@@ -27,11 +29,14 @@ class BackupManager(object):
         self.tmp_dir = os.path.abspath(u_path)
         logger.info("BackupManager initialized\n")
 
+    # For setting defaults when values are missing
     def set_or_default(self, name):
         vals = {
             "add_date": True,
             "temp": "temp",
-            "date_format": "&d-&m-&Y"
+            "date_format": "&d-&m-&Y",
+            "make_zip": "y",
+            "over_creds": "n",
         }
         val = None
         try:
@@ -46,13 +51,18 @@ class BackupManager(object):
                 d_formats = ["&d-&m-&Y", "&d-&Y-&m" "&m-&d-&Y", "&m-&Y-&d", "&Y-&m-&d", "&Y-&d-&m"]
                 val = self.u_args.date_format if self.u_args.date_format else str(self.config["BACKUPS"]["date_format"])
                 if val not in d_formats:
-                    self.logger.critical("Invalid date format %s\n" % (d_format))
+                    self.logger.critical("Invalid date format %s\n" % (val))
                     sys.exit(1)
+            elif name == "make_zip":
+                val = self.u_args.make_zip if self.u_args.make_zip else self.config["BACKUPS"]["make_zip"]
+            elif name == "over_creds":
+                val = self.u_args.over_creds if self.u_args.over_creds else self.config["BACKUPS"]["over_creds"]
         except KeyError as e:
             self.logger.debug("Missing parameter from config and arguments: %s\nSetting to default: %s" % (name, vals[name]))
             return vals[name]
         return val
 
+    # Check if paths exist
     def check_paths(self):
         self.logger.info("Checking paths before proceeding\n")
         if not self.path_s:
@@ -79,6 +89,7 @@ class BackupManager(object):
                 sys.exit(1)
         self.logger.info("Found path(s) %s\n" % (self.path_s))
 
+    # Copy to specified tmp dir
     def call_copy(self):
         self.logger.info("Copying files to temporary dir\n")
         path_s = self.path_s
@@ -100,6 +111,7 @@ class BackupManager(object):
                 self.logger.debug("Copying from %s to %s" % (src, tmp_dir))
                 d_copy(src, tmp_dir)
 
+    # Return lowest date between 2 values from file names
     def return_low_date(self, name1, name2):
         try:
             time1 = re.search("__(.*)\.zip", name1).group(1)
@@ -114,6 +126,7 @@ class BackupManager(object):
             self.logger.critical("Failed to find dates in the provided names\n")
             sys.exit(1)
 
+    # Return lowest date
     def return_lowest(self, list):
         lowest = None
         last = None
@@ -126,6 +139,7 @@ class BackupManager(object):
                 name = last
         return lowest
 
+    # Make a zip archive
     def make_zip(self):
         self.logger.info("Making zip file\n")
         src = self.tmp_dir

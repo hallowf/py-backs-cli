@@ -1,7 +1,8 @@
 [BACKUPS]
 backend=local
-date_format=&d-&m-&y
-path_s=requirements.txt
 make_zip=y
 add_date=y
+over_creds=n
+date_format=&d-&m-&Y
 temp=temp
+path_s=requirements.txt
