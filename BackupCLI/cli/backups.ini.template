@@ -5,4 +5,5 @@ add_date=y
 over_creds=n
 date_format=&d-&m-&Y
 temp=temp
+dest_folder=Backups
 path_s=requirements.txt

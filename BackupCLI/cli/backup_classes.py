@@ -37,6 +37,7 @@ class BackupManager(object):
             "date_format": "&d-&m-&Y",
             "make_zip": "y",
             "over_creds": "n",
+            "dest_folder": "PYBCLI",
         }
         val = None
         try:
@@ -57,6 +58,8 @@ class BackupManager(object):
                 val = self.u_args.make_zip if self.u_args.make_zip else self.config["BACKUPS"]["make_zip"]
             elif name == "over_creds":
                 val = self.u_args.over_creds if self.u_args.over_creds else self.config["BACKUPS"]["over_creds"]
+            elif name == "dest_folder":
+                val = self.u_args.dest_folder if self.u_args.dest_folder else self.config["BACKUPS"]["dest_folder"]
         except KeyError as e:
             self.logger.debug("Missing parameter from config and arguments: %s\nSetting to default: %s" % (name, vals[name]))
             return vals[name]

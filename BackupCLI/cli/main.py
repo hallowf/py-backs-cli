@@ -19,7 +19,7 @@ def run_main():
         sys.stdout.write("Invalid log level " + di_level + "\n")
         sys.exit(1)
     logging.basicConfig(format="PYBackups CLI - %(name)s->%(levelname)s : %(message)s",level=d_level)
-    logger = logging.getLogger("BackupManager")
+    logger = logging.getLogger("Backup Manager")
     config = configparser.ConfigParser()
     conf_file = args.cfg if args.cfg else "backups.ini"
     if not os.path.isfile(conf_file):
@@ -33,7 +33,8 @@ def run_main():
     # If specified make a zip file
     make_zip = b_manager.set_or_default("make_zip")
     if make_zip:
-        b_manager.make_zip()
+        print(1)
+        # b_manager.make_zip()
     if args.backend == "local":
         logger.info("Finished\n")
     else:
@@ -43,9 +44,24 @@ def run_main():
             sys.exit(1)
         tmp_dir = b_manager.tmp_dir
         over_creds = b_manager.set_or_default("over_creds")
+        dest = b_manager.set_or_default("dest_folder")
         # Release BackupManager Start BackendManager
         b_manager = BackendManager(args.backend, tmp_dir)
-        b_manager.check_and_set_creds()
+        b_manager.check_and_auth(over_creds)
+        # # TODO: Maybe put this inside BackendManager
+        src = tmp_dir
+        d_items = os.listdir(tmp_dir)
+        if len(d_items) == 1:
+            n_path = os.path.join(tmp_dir, d_items[0])
+            if os.path.isdir(n_path):
+                logger.info("Shifting src down since only one folder is present\n")
+                src = n_path
+            elif os.path.isfile(n_path):
+                logger.info("Found only one file setting src to it")
+                src = n_path
+        b_manager.upload_file_s(dest, src)
+        logger.info("Finished\n")
+        print(os.listdir(tmp_dir))
 
 
 

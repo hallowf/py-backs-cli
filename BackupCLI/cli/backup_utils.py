@@ -13,5 +13,6 @@ def add_args(parser):
     parser.add_argument("--add_date", help="Add date to zipfile", action="store")
     parser.add_argument("--date_format", help="Date format to add to zipfile", action="store")
     parser.add_argument("--over_creds", help="Overwrite credentials for cloud providers", action="store")
+    parser.add_argument("--dest_folder", help="Destination folder for cloud provider", action="store")
     args = parser.parse_args()
     return args
