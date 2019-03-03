@@ -1,6 +1,7 @@
 [BACKUPS]
-format=d/m/y
 backend=local
-add_date=y
 date_format=&d-&m-&y
 path_s=requirements.txt
+make_zip=y
+add_date=y
+temp=temp

@@ -27,16 +27,19 @@ def run_main():
     config.read(conf_file)
     b_manager = BackupManager(args, logger, config)
     b_manager.check_paths()
-    n_list = [
-        "backups__03-03-2019_17H_5m.zip",
-        "backups__03-03-2019_17H_14m.zip",
-        "backups__03-03-2019_18H_24m.zip",
-        "backups__03-03-2019_23H_14m.zip",
-        ]
-    # b_manager.call_copy()
-    # b_manager.make_zip()
-    # b_manager.return_low_date("backups__03-03-2019_17H_5m.zip", "backups__03-03-2019_17H_14m.zip")
-    b_manager.find_lowest(n_list)
+    b_manager.call_copy()
+    if args.make_zip:
+        b_manager.make_zip()
+    if args.backend == "local":
+        logger.info("Finished\n")
+    else:
+        backends = ["db","gd","mod",]
+        if args.backend not in backends:
+            logger.critical("Uknown backend %s" % (args.backend))
+        tmp_dir = b_manager.tmp_dir
+        print(tmp_dir)
+        b_manager = None
+        print(tmp_dir)
 
 
 
