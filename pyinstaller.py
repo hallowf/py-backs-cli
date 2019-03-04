@@ -11,13 +11,13 @@ PyInstaller.__main__.run([
         '--log-level=WARN',
         '--onefile',
         '--name=PYBCLI',
-        "BackupCLI/cli/main.py",
+        "cli/main.py",
     ])
 
 
 # Add other to dist
 to_add = {
-    "backups.ini.template": "BackupCli/cli/backups.ini.template",
+    "backups.ini.template": "cli/backups.ini.template",
 }
 t_dest = "%s/dist/" % (CWD)
 
