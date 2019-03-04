@@ -15,10 +15,20 @@ matrix:
         - UPX_PATH=$(PWD)/UPX
 
 before_install:
-  - ./scripts/before_install.sh
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      ./scripts/lin_before_install.sh;
+    elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      ./scripts/osx_before_install.sh;
+    elif [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+      ./scripts/win_before_install.sh;
+    fi
 
 install:
-  - ./scripts/install.sh
+  - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then
+      ./scripts/install.sh;
+    elif [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+      ./scripts/win_install.sh;
+    fi
 
 script:
   - python -m unittest $(PWD)/tests
