@@ -1,4 +1,4 @@
-if [ "$TRAVIS_OS_NAME" != "windows" ]; then
+if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then
     bash miniconda.sh -b -p $HOME/miniconda;
     export PATH="$HOME/miniconda:$HOME/miniconda/bin:$PATH";
     hash -r;
@@ -9,5 +9,5 @@ if [ "$TRAVIS_OS_NAME" != "windows" ]; then
     conda env create python=$TRAVIS_PYTHON_VERSION -f environment.yml;
     source activate pybcli;
   elif  [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-    $PY -m pip install -r requirements.txt ;
+    $PY -m pip install -r requirements.txt
   fi
