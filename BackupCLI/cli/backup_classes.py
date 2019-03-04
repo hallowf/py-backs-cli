@@ -99,12 +99,12 @@ class BackupManager(object):
         if os.path.isdir(self.tmp_dir):
             self.logger.debug("Removing temp dir")
             shutil.rmtree(self.tmp_dir)
-        self.logger.debug("Creating temp dir")
-        os.mkdir(self.tmp_dir)
         tmp_dir = os.path.abspath(self.tmp_dir)
         if not isinstance(path_s, list):
             path_s = os.path.abspath(path_s)
             d_copy = shutil.copytree if os.path.isdir(path_s) else shutil.copy
+            if d_copy == shutil.copy:
+                os.mkdir(self.tmp_dir)
             self.logger.debug("Copying from %s to %s" % (path_s, tmp_dir))
             d_copy(path_s, tmp_dir)
         else:
@@ -153,12 +153,21 @@ class BackupManager(object):
             cdt = datetime.datetime.now()
             u_str = cdt.strftime(self.date_format)
             cdt_str = "%s_%sH_%sm" % (u_str, cdt.hour, cdt.minute)
-            f_str = "%s__%s.zip" % (self.z_name.replace(".zip", ""), cdt_str)
+            f_str = "%s__%s.zip" % ( self.z_name.replace(".zip", ""), cdt_str)
             zf = zipfile.ZipFile(f_str, "w", zipfile.ZIP_DEFLATED)
             try:
                 for root, dirs, files in os.walk(src):
                     for file in files:
                         zf.write(os.path.join(root, file))
+                zf.close()
+                try:
+                    shutil.rmtree(src)
+                    os.mkdir(src)
+                    shutil.move(f_str, "%s\\%s" % (src, f_str))
+                except Exception as e:
+                    self.logger.critical("Failed to move zip to temp\n")
+                    self.logger.debug(e)
+                    sys.exit(1)
             except Exception as e:
                 self.logger.critical("Failed to create zipfile\n")
                 self.logger.debug(e)

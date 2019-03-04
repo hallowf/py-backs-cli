@@ -3,3 +3,7 @@ venv
 *.ini
 temp
 *.zip
+*.bat
+build
+dist
+*.spec

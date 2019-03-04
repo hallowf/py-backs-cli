@@ -33,8 +33,7 @@ def run_main():
     # If specified make a zip file
     make_zip = b_manager.set_or_default("make_zip")
     if make_zip:
-        print(1)
-        # b_manager.make_zip()
+        b_manager.make_zip()
     if args.backend == "local":
         logger.info("Finished\n")
     else:
@@ -61,7 +60,6 @@ def run_main():
                 src = n_path
         b_manager.upload_file_s(dest, src)
         logger.info("Finished\n")
-        print(os.listdir(tmp_dir))
 
 
 

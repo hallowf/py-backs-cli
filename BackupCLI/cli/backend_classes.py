@@ -32,7 +32,9 @@ class BackendManager(object):
                 self.logger.critical("Something went wrong while trying to access token in keyring\n")
                 sys.exit(1)
             try:
+                # Authenticate and release token
                 self.do_auth(u_token)
+                u_token = None
             except Exception:
                 self.logger.critical("Error while trying to authenticate, probably bad credentials\n")
                 sys.exit(1)
