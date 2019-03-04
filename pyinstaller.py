@@ -11,17 +11,17 @@ PyInstaller.__main__.run([
         '--log-level=WARN',
         '--onefile',
         '--name=PYBCLI',
-        "BackupCLI\\cli\\main.py",
+        "BackupCLI/cli/main.py",
     ])
 
 
 # Add other to dist
 to_add = {
-    "backups.ini.template": "BackupCli\\cli\\backups.ini.template",
+    "backups.ini.template": "BackupCli/cli/backups.ini.template",
 }
-t_dest = "%s\\dist\\" % (CWD)
+t_dest = "%s/dist/" % (CWD)
 
 for f in to_add:
-    f_src = "%s\\%s" % (CWD, to_add[f])
+    f_src = "%s/%s" % (CWD, to_add[f])
     f_dest = t_dest + f
     shutil.copyfile(f_src, f_dest)
