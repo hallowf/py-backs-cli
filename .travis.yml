@@ -6,6 +6,7 @@ matrix:
       dist: xenial
       python: "3.7"
       env:
+        - PY=python3
         - UPX_PATH="$PWD"/UPX
     - os : windows
       language : shell
