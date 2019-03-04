@@ -5,6 +5,8 @@ matrix:
       sudo: required
       dist: xenial
       python: "3.7"
+      env:
+        - UPX_PATH=$(PWD)/UPX
     - os : windows
       language : shell
       python: 3.7
@@ -17,28 +19,29 @@ before_install:
       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
     elif  [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh;
-    elif [[ "$TRAVIS_OS_NAME" == "windows"]]; then
-      choco install python;
-      mkdir UPX && cd UPX && export UPX_PATH=$(PWD);
-      curl https://github.com/upx/upx/releases/download/v3.95/upx-3.95-win64.zip -J -L --output UPX.zip;
-      7z e -y UPX.zip -o"." upx-3.95-win64\*.exe;
-      cd ..;
+    elif  [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+      choco install python &&
+      mkdir UPX && cd UPX && export UPX_PATH=$(PWD) &&
+      curl https://github.com/upx/upx/releases/download/v3.95/upx-3.95-win64.zip -J -L --output UPX.zip &&
+      7z e -y UPX.zip -o"." upx-3.95-win64\*.exe &&
+      cd ..
     fi
 
 install:
   - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then
       bash miniconda.sh -b -p $HOME/miniconda;
       export PATH="$HOME/miniconda:$HOME/miniconda/bin:$PATH";
+      hash -r;
+      conda config --set always_yes yes --set changeps1 no;
+      conda update -q conda;
+      echo $TRAVIS_OS_NAME;
+      echo $TRAVIS_PYTHON_VERSION;
+      conda env create python=$TRAVIS_PYTHON_VERSION -f environment.yml;
+      source activate pybcli;
     elif  [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-      $PY -m pip install -r requirements.txt;
+      $PY -m pip install -r requirements.txt
     fi
-  - hash -r;
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  - echo $TRAVIS_OS_NAME
-  - echo $TRAVIS_PYTHON_VERSION
-  - conda env create python=$TRAVIS_PYTHON_VERSION -f environment.yml;
-  - source activate pybcli
+
 
 script:
   - python -m unittest tests
