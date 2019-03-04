@@ -1,4 +1,4 @@
-import os, zipfile, zlib, datetime, shutil, sys, re, itertools
+import os, zipfile, zlib, datetime, shutil, sys, itertools
 
 class BackupManager(object):
     """docstring for BackupManager."""
@@ -46,21 +46,23 @@ class BackupManager(object):
                 if not val:
                     val = "temp"
             elif name == "add_date":
-                val = True if self.u_args.add_date else self.config["BACKUPS"]["add_date"]
-                val = True if val or val == "y" else False
+                val = self.u_args.add_date if self.u_args.add_date else self.config["BACKUPS"]["add_date"]
+                val = True if val == "y" else False
             elif name == "date_format":
                 d_formats = ["&d-&m-&Y", "&d-&Y-&m" "&m-&d-&Y", "&m-&Y-&d", "&Y-&m-&d", "&Y-&d-&m"]
                 val = self.u_args.date_format if self.u_args.date_format else str(self.config["BACKUPS"]["date_format"])
                 if val not in d_formats:
-                    self.logger.critical("Invalid date format %s\n" % (val))
-                    sys.exit(1)
+                    self.logger.debug("Invalid date format %s\n" % (val))
+                    raise KeyError
             elif name == "make_zip":
                 val = self.u_args.make_zip if self.u_args.make_zip else self.config["BACKUPS"]["make_zip"]
             elif name == "over_creds":
                 val = self.u_args.over_creds if self.u_args.over_creds else self.config["BACKUPS"]["over_creds"]
             elif name == "dest_folder":
                 val = self.u_args.dest_folder if self.u_args.dest_folder else self.config["BACKUPS"]["dest_folder"]
-        except KeyError as e:
+            if val == "" or val == " ":
+                raise KeyError
+        except KeyError:
             self.logger.debug("Missing parameter from config and arguments: %s\nSetting to default: %s" % (name, vals[name]))
             return vals[name]
         return val
@@ -113,34 +115,6 @@ class BackupManager(object):
                 d_copy = shutil.copytree if os.path.isdir(src) else shutil.copy
                 self.logger.debug("Copying from %s to %s" % (src, tmp_dir))
                 d_copy(src, tmp_dir)
-
-    # Return lowest date between 2 values from file names
-    def return_low_date(self, name1, name2):
-        try:
-            time1 = re.search("__(.*)\.zip", name1).group(1)
-            time1 = datetime.datetime.strptime(time1, self.date_format + str("_%HH_%Mm"))
-            time2 = re.search("__(.*)\.zip", name2).group(1)
-            time2 = datetime.datetime.strptime(time2, self.date_format + str("_%HH_%Mm"))
-            if time1 < time2:
-                return name1
-            else:
-                return name2
-        except AttributeError:
-            self.logger.critical("Failed to find dates in the provided names\n")
-            sys.exit(1)
-
-    # Return lowest date
-    def return_lowest(self, list):
-        lowest = None
-        last = None
-        for name in list:
-            if not lowest:
-                lowest = name
-                pass
-            elif name != last:
-                lowest = self.return_low_date(lowest, name)
-                name = last
-        return lowest
 
     # Make a zip archive
     def make_zip(self):

@@ -6,7 +6,7 @@ from backend_classes import BackendManager
 
 def run_main():
     sys.stdout.write("\n")
-    arg_parser = argparse.ArgumentParser(description='Manage PCSX2 configs')
+    arg_parser = argparse.ArgumentParser(description='Simple backup CLI')
     args = add_args(arg_parser)
     di_level = "info" if not args.debug else args.debug
     d_level = None
@@ -44,8 +44,20 @@ def run_main():
         tmp_dir = b_manager.tmp_dir
         over_creds = b_manager.set_or_default("over_creds")
         dest = b_manager.set_or_default("dest_folder")
+        # If backend is onedrive get client_id
+        has_id = True
+        c_id = None
+        try:
+            c_id = args.client_id if args.client_id else config["BACKUPS"]["client_id"]
+        except KeyError:
+            has_id = False
+        if c_id == "" or c_id == " ":
+            has_id = False
+        if not has_id:
+            logger.critical("This backend requires a client id")
+            sys.exit(1)
         # Release BackupManager Start BackendManager
-        b_manager = BackendManager(args.backend, tmp_dir)
+        b_manager = BackendManager(args.backend, tmp_dir, c_id)
         b_manager.check_and_auth(over_creds)
         # # TODO: Maybe put this inside BackendManager
         src = tmp_dir
@@ -58,7 +70,7 @@ def run_main():
             elif os.path.isfile(n_path):
                 logger.info("Found only one file setting src to it")
                 src = n_path
-        b_manager.upload_file_s(dest, src)
+        # b_manager.upload_file_s(dest, src)
         logger.info("Finished\n")
 
 
