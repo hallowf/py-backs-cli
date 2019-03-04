@@ -16,9 +16,9 @@ matrix:
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      ./scripts/lin_before_install.sh;
+      ./home/hallowf/py-backs-cli/scripts/lin_before_install.sh;
     elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      ./scripts/osx_before_install.sh;
+      ./home/hallowf/py-backs-cli/scripts/osx_before_install.sh;
     elif [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
       ./scripts/win_before_install.sh;
     fi
@@ -31,5 +31,6 @@ install:
     fi
 
 script:
-  - python -m unittest $(PWD)/tests
+  - cd py-backs-cli
+  - python -m unittest tests/
   - python pyinstaller.py
