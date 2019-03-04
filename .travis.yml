@@ -23,11 +23,8 @@ before_install:
     fi
 
 install:
-  - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then
-      ./scripts/install.sh;
-    elif [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-      ./scripts/win_install.sh;
-    fi
+  - ls
+  - $PY -m pip install -r requirements.txt
 
 script:
   - python -m unittest tests/
