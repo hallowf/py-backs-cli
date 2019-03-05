@@ -1,5 +1,21 @@
 import sys
 
+def return_def_conf():
+    config = {
+        "BACKUPS": {
+            "backend": "local",
+            "make_zip": "y",
+            "add_date": "y",
+            "over_creds": "n",
+            "date_format": "&d-&m-&Y",
+            "temp": "temp",
+            "client_id": "",
+            "dest_folder": "PYBCLI",
+            "path_s": ""
+        }
+    }
+    return config
+
 def add_args(parser):
     # required
     parser.add_argument("backend", help="Where to store: can be local or any of the supported providers", action="store")
