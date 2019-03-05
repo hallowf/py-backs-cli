@@ -9,6 +9,14 @@ jobs:
       env:
       - PY=python3
       - UPX_PATH="$PWD"/UPX
+    - stage: Windows build
+      os: windows
+      language: shell
+      python: 3.7
+      env:
+      - PY=py
+      - UPX_PATH=$(PWD)/UPX
+    - stage: Github Release
       deploy: &deploy_base
         provider: releases
         api_key:
@@ -19,16 +27,6 @@ jobs:
         draft: true
         on:
           repo: hallowf/py-backs-cli
-    - stage: Windows build
-      os: windows
-      language: shell
-      python: 3.7
-      env:
-      - PY=py
-      - UPX_PATH=$(PWD)/UPX
-      deploy:
-        <<: *deploy_base
-        draft: true
 
 before_install:
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
