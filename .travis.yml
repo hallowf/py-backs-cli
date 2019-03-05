@@ -1,8 +1,9 @@
+language: ruby
+
 jobs:
   include:
     - stage: Linux build
       os: linux
-      language: python
       sudo: required
       dist: xenial
       python: '3.7'
@@ -15,20 +16,18 @@ jobs:
           secure: PeGhFBjv5dGt5g3Kkt+5k+Z147+zwpRokYYazjKRSNsionRGTQIn23X4t3o4kGNlWwTpMxYp1Tx+dzv9h6F0rMHYe2dnZZ/celIUP/0SIC83jkV5gPx1rJmTXcyDsDGGBfDkRTPPu4SEfuRs9i8g+MqvrJWWKS9MWFESH758gTBlsosIV8oiWZZsBX3Q5XFKGKaUKKMjOJLsp8vopj2G6lLlNaTY67R+EtHBw+qASRphIg0m6373PVhfxK3BwwiP6/Af67Sjs+AepIFxkoKZY4GrmwHdB1IGuUQZ8znucAUnoH4YpTKzJfb0WmKFx2EjTw9Qs4iGiuWvVsmHorcFhH5dLXhZLQM95Nc/YOWaEOQ8l1YeNFU82Xo5uUE96EPi9YLtCrHSLw0vOxc/SZr3ypbQt1ogtXkiGWPIdpfzP0THhgBcru2tl98gNIkvMxqxik5asXof/V9ocAcjLDP269sGSneJfTloen3we1qj6ojiZCaOm27sRl74Vk/60I7K6e4FRYoht7WGdsAlvwnOT17bN/XAZavjxkQxBnryzVYvtB2vTpLi5sFFCvT7+1z5mnzh2u92hwSiJBHSIwZzisQSCESjlW0VlV7ESuGaNf6CdDTjoLr1Wx7Jk15pnRUaJQdjzXG+kQCD/7GPzHLVzpqbHKW7twuSoJsD+K4fVVA=
         skip_cleanup: true
         file_glob: true
-        file: dist/lin/*
+        file: dist/*
         draft: true
         on:
           repo: hallowf/py-backs-cli
     - stage: Windows build
       os: windows
-      language: shell
       python: 3.7
       env:
       - PY=py
       - UPX_PATH=$(PWD)/UPX
       deploy:
         <<: *deploy_base
-        file: dist/win/*
         draft: true
 
 before_install:
@@ -46,5 +45,3 @@ install:
 script:
 - $PY -m unittest discover tests/ "*_test.py"
 - "$PY pyinstaller.py"
-
-deploy:
