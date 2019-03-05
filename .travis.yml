@@ -1,4 +1,4 @@
-matrix:
+jobs:
   include:
   - stage: Linux build
     os: linux
