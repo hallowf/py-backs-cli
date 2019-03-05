@@ -107,24 +107,26 @@ class BackupManager(object):
             shutil.rmtree(self.tmp_dir)
         tmp_dir = os.path.abspath(self.tmp_dir)
         if not isinstance(path_s, list):
+            n_tmp_dir = tmp_dir
             abspath_s = os.path.abspath(path_s)
             d_copy = shutil.copytree if os.path.isdir(abspath_s) else shutil.copy
             if d_copy == shutil.copy:
                 if not os.path.isdir(self.tmp_dir):
                     os.mkdir(self.tmp_dir)
-                tmp_dir = "%s/%s" % (tmp_dir, path_s)
-            self.logger.debug("Copying from %s to %s" % (abspath_s, tmp_dir))
-            d_copy(path_s, tmp_dir)
+                n_tmp_dir = "%s/%s" % (tmp_dir, path_s)
+            self.logger.debug("Copying from %s to %s" % (abspath_s, n_tmp_dir))
+            d_copy(path_s, n_tmp_dir)
         else:
             for src in path_s:
+                n_tmp_dir = tmp_dir
                 abssrc = os.path.abspath(src)
                 d_copy = shutil.copytree if os.path.isdir(abssrc) else shutil.copy
                 if d_copy == shutil.copy:
                     if not os.path.isdir(self.tmp_dir):
                         os.mkdir(self.tmp_dir)
-                    tmp_dir = "%s/%s" % (tmp_dir, src)
-                self.logger.debug("Copying from %s to %s" % (abssrc, tmp_dir))
-                d_copy(abssrc, tmp_dir)
+                    n_tmp_dir = "%s/%s" % (tmp_dir, src)
+                self.logger.debug("Copying from %s to %s" % (abssrc, n_tmp_dir))
+                d_copy(abssrc, n_tmp_dir)
 
     # Make a zip archive
     def make_zip(self):
