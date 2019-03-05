@@ -1,4 +1,4 @@
-import os, zipfile, zlib, datetime, shutil, sys, itertools
+import os, zipfile, zlib, datetime, shutil, sys
 
 class BackupManager(object):
     """docstring for BackupManager."""
@@ -13,6 +13,9 @@ class BackupManager(object):
         path_s = None
         try:
             path_s = args.path_s if args.path_s else config["BACKUPS"]["path_s"]
+            # Check if path_s is not an empty string
+            if path_s == "" or path_s == " ":
+                raise ValueError
         except Exception as e:
             logger.critical("Missing path values, exiting...")
             sys.exit(1)
@@ -72,7 +75,7 @@ class BackupManager(object):
         self.logger.info("Checking paths before proceeding\n")
         if not self.path_s:
             self.logger.critical("Couldn't find any paths, have you provided them in the config or by arguments?")
-            sys.exit(1)
+            return False
         path_s = self.path_s
         if isinstance(path_s, list):
             f_list = { v:True for v in path_s}
@@ -85,13 +88,14 @@ class BackupManager(object):
             c_list = [False for v in f_list if f_list[v] == False]
             # # TODO: If false in c_list ask to continue...
             if False in c_list:
-                self.logger.critical("Missing path, cannot resume: Not implemented")
-                sys.exit(1)
+                self.logger.critical("Missing path, cannot resume: Not implemented\n")
+                return False
         else:
-            check = os.path.isdir if os.path.isdir(path_s) else os.path.isfile(path_s)
+            check = os.path.isdir if os.path.isdir(path_s) else os.path.isfile
             if not check(path_s):
                 self.logger.critical("Cant find path %s\n" % (path_s))
-                sys.exit(1)
+                return False
+        return True
         self.logger.info("Found path(s) %s\n" % (self.path_s))
 
     # Copy to specified tmp dir
@@ -103,18 +107,24 @@ class BackupManager(object):
             shutil.rmtree(self.tmp_dir)
         tmp_dir = os.path.abspath(self.tmp_dir)
         if not isinstance(path_s, list):
-            path_s = os.path.abspath(path_s)
-            d_copy = shutil.copytree if os.path.isdir(path_s) else shutil.copy
+            abspath_s = os.path.abspath(path_s)
+            d_copy = shutil.copytree if os.path.isdir(abspath_s) else shutil.copy
             if d_copy == shutil.copy:
-                os.mkdir(self.tmp_dir)
-            self.logger.debug("Copying from %s to %s" % (path_s, tmp_dir))
+                if not os.path.isdir(self.tmp_dir):
+                    os.mkdir(self.tmp_dir)
+                tmp_dir = "%s/%s" % (tmp_dir, path_s)
+            self.logger.debug("Copying from %s to %s" % (abspath_s, tmp_dir))
             d_copy(path_s, tmp_dir)
         else:
             for src in path_s:
-                src = os.path.abspath(src)
-                d_copy = shutil.copytree if os.path.isdir(src) else shutil.copy
-                self.logger.debug("Copying from %s to %s" % (src, tmp_dir))
-                d_copy(src, tmp_dir)
+                abssrc = os.path.abspath(src)
+                d_copy = shutil.copytree if os.path.isdir(abssrc) else shutil.copy
+                if d_copy == shutil.copy:
+                    if not os.path.isdir(self.tmp_dir):
+                        os.mkdir(self.tmp_dir)
+                    tmp_dir = "%s/%s" % (tmp_dir, src)
+                self.logger.debug("Copying from %s to %s" % (abssrc, tmp_dir))
+                d_copy(abssrc, tmp_dir)
 
     # Make a zip archive
     def make_zip(self):
@@ -132,7 +142,8 @@ class BackupManager(object):
             try:
                 for root, dirs, files in os.walk(src):
                     for file in files:
-                        zf.write(os.path.join(root, file))
+                        n_root = os.path.basename(os.path.normpath(root))
+                        zf.write(os.path.join(root, file), "%s/%s" % (n_root, file))
                 zf.close()
                 try:
                     shutil.rmtree(src)

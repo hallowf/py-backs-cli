@@ -28,7 +28,8 @@ def run_main():
     config.read(conf_file)
     # Initialize backup manager and copy files
     b_manager = BackupManager(args, logger, config)
-    b_manager.check_paths()
+    if not b_manager.check_paths():
+        sys.exit(1)
     b_manager.call_copy()
     # If specified make a zip file
     make_zip = b_manager.set_or_default("make_zip")
