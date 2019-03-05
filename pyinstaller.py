@@ -12,6 +12,7 @@ PyInstaller.__main__.run([
         '--noconfirm',
         '--upx-dir=%s' % (UPX_PATH),
         '--log-level=WARN',
+        '--distpath=bdist',
         '--onefile',
         '--name=PYBCLI',
         "cli/main.py",
@@ -23,7 +24,7 @@ PyInstaller.__main__.run([
 to_add = {
     "backups.ini.template": "cli/backups.ini.template",
 }
-t_dest = "%s/dist/" % (CWD)
+t_dest = "%s/bdist/" % (CWD)
 if c_plat == "windows":
     for f in to_add:
         f_src = "%s/%s" % (CWD, to_add[f])
