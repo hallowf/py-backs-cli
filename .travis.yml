@@ -21,7 +21,7 @@ before_deploy:
     # Set up git user name and tag this commit
     - git config --local user.name "hallowf"
     - git config --local user.email "$GIT_EMAIL"
-    - export TRAVIS_TAG="git rev-parse HEAD"
+    - export TRAVIS_TAG=`git rev-parse HEAD`
     - git tag $TRAVIS_TAG
 
 deploy:
