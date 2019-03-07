@@ -1,6 +1,0 @@
-name: pybcli
-dependencies:
-  - pyinstaller
-  - keyring
-  - dropbox
-  - onedrivesdk

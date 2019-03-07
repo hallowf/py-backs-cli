@@ -1,14 +1,8 @@
+services:
+  - docker
+
 jobs:
   include:
-    - stage: Linux build
-      language: python
-      os: linux
-      sudo: required
-      dist: xenial
-      python: '3.7'
-      env:
-      - PY=python3
-      - UPX_PATH="$PWD"/UPX
     - stage: Windows build
       os: windows
       language: shell
@@ -30,17 +24,14 @@ deploy:
     repo: hallowf/py-backs-cli
 
 before_install:
-- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-    ./scripts/osx_before_install.sh;
-  elif [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-    ./scripts/lin_before_install.sh;
-  elif [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-    ./scripts/win_before_install.sh;
-  fi
+- ./scripts/win_before_install.sh
+- docker build --platform linux -t hallowf/pybcli/lin -f Dockerfile .
 
 install:
 - "$PY -m pip install -r requirements.txt"
+- docker run --platform linux -t -d --name pybcli_lin hallowf/pybcli/lin
 
 script:
 - $PY -m unittest discover tests/ "*_test.py"
 - "$PY pyinstaller.py"
+- docker cp --platform linux pybcli_lin:/code/dist/. dist/.
