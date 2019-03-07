@@ -1,0 +1,12 @@
+__pycache__
+venv
+*.ini
+temp
+*.zip
+*.bat
+build
+dist
+*.spec
+*.json
+*.test
+old_*
