@@ -1,5 +1,5 @@
 import PyInstaller.__main__
-import os, shutil
+import os, shutil, platform
 
 UPX_PATH = os.environ["UPX_PATH"]
 CWD = os.path.dirname(os.path.abspath(__file__))
@@ -21,7 +21,6 @@ PyInstaller.__main__.run([
 to_add = {
     "backups.ini.template": "cli/backups.ini.template",
 }
-
 t_dest = "%s/dist/" % (CWD)
 if c_plat == "windows":
     for f in to_add:
