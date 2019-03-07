@@ -1,4 +1,4 @@
-import unittest, sys, argparse, logging, configparser, os
+import unittest, sys, argparse, logging, configparser, os, shutil, zipfile
 from cli.backup_classes import BackupManager
 from cli.backup_utils import add_args
 from unittest import TestCase, mock, main
@@ -54,6 +54,10 @@ class TestBackupManager(unittest.TestCase):
         b_manager = BackupManager(args, logger, f_config1)
         self.b_manager = b_manager
 
+    def tearDown(self):
+        if os.path.isdir(self.b_manager.tmp_dir):
+            shutil.rmtree(self.b_manager.tmp_dir)
+
     # Replaces args
     def test_init(self):
         # Create args
@@ -88,7 +92,7 @@ class TestBackupManager(unittest.TestCase):
         make_zip = self.b_manager.set_or_default("make_zip")
         over_creds = self.b_manager.set_or_default("over_creds")
         dest_folder = self.b_manager.set_or_default("dest_folder")
-        self.assertFalse(add_date)
+        self.assertTrue(add_date)
         self.assertEqual("temp", tmp_dir)
         self.assertEqual("&d-&m-&Y", date_format)
         self.assertEqual("y", make_zip)
@@ -104,6 +108,21 @@ class TestBackupManager(unittest.TestCase):
         files_list = os.listdir(self.b_manager.tmp_dir)
         self.assertTrue(has_dir)
         self.assertCountEqual(c_files, files_list)
+
+    def test_make_zip(self):
+        # Make sure files are in tmp dir
+        self.b_manager.call_copy()
+        # Make zip file
+        self.b_manager.make_zip()
+        # Check file created
+        l_dir = os.listdir(self.b_manager.tmp_dir)
+        self.assertTrue(l_dir[0].endswith(".zip"))
+        z_location = "%s/%s" % (self.b_manager.tmp_dir, l_dir[0])
+        z_list = None
+        names = ["temp/test1.test", "temp/test2.test"]
+        with zipfile.ZipFile(z_location, 'r') as zf:
+            z_list = zf.namelist()
+        self.assertCountEqual(names, z_list)
 
     # Ignores self.b_manager
     def test_no_path(self):

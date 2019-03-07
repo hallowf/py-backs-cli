@@ -1,6 +1,6 @@
 import argparse, sys, logging, configparser, os
 
-from backup_utils import add_args
+from backup_utils import add_args, return_def_conf
 from backup_classes import BackupManager
 from backend_classes import BackendManager
 
@@ -20,12 +20,15 @@ def run_main():
         sys.exit(1)
     logging.basicConfig(format="PYBackups CLI - %(name)s->%(levelname)s : %(message)s",level=d_level)
     logger = logging.getLogger("Backup Manager")
-    config = configparser.ConfigParser()
+    config = None
     conf_file = args.cfg if args.cfg else "backups.ini"
     if not os.path.isfile(conf_file):
-        logger.critical("Can't find file: %s\n" % (conf_file))
-        sys.exit(1)
-    config.read(conf_file)
+        logger.error("Can't find file: %s\n" % (conf_file))
+        config = return_def_conf()
+        logger.debug("Using default configuration:\n%s\n" % (config))
+    else:
+        config = configparser.ConfigParser()
+        config.read(conf_file)
     # Initialize backup manager and copy files
     b_manager = BackupManager(args, logger, config)
     if not b_manager.check_paths():
@@ -33,10 +36,11 @@ def run_main():
     b_manager.call_copy()
     # If specified make a zip file
     make_zip = b_manager.set_or_default("make_zip")
-    if make_zip:
+    if make_zip == "y":
         b_manager.make_zip()
     if args.backend == "local":
         logger.info("Finished\n")
+        sys.exit(0)
     else:
         backends = ["db","gd","mod",]
         if args.backend not in backends:
@@ -46,17 +50,15 @@ def run_main():
         over_creds = b_manager.set_or_default("over_creds")
         dest = b_manager.set_or_default("dest_folder")
         # If backend is onedrive get client_id
-        has_id = True
         c_id = None
-        try:
-            c_id = args.client_id if args.client_id else config["BACKUPS"]["client_id"]
-        except KeyError:
-            has_id = False
-        if c_id == "" or c_id == " ":
-            has_id = False
-        if not has_id:
-            logger.critical("This backend requires a client id")
-            sys.exit(1)
+        if args.backend == "mod":
+            try:
+                c_id = args.client_id if args.client_id else config["BACKUPS"]["client_id"]
+                if c_id == "" or c_id == " ":
+                    raise KeyError
+            except KeyError:
+                logger.critical("This backend requires a client id\n")
+                sys.exit(1)
         # Release BackupManager Start BackendManager
         b_manager = BackendManager(args.backend, tmp_dir, c_id)
         b_manager.check_and_auth(over_creds)
@@ -69,7 +71,7 @@ def run_main():
                 logger.info("Shifting src down since only one folder is present\n")
                 src = n_path
             elif os.path.isfile(n_path):
-                logger.info("Found only one file setting src to it")
+                logger.info("Found only one file setting src to it\n")
                 src = n_path
         # b_manager.upload_file_s(dest, src)
         logger.info("Finished\n")
