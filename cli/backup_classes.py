@@ -1,4 +1,4 @@
-import os, zipfile, zlib, datetime, shutil, sys
+import os, zipfile, zlib, datetime, shutil, sys, re
 
 class BackupManager(object):
     """docstring for BackupManager."""
@@ -11,18 +11,27 @@ class BackupManager(object):
         if not self.z_name.endswith(".zip"):
             self.z_name = self.z_name + ".zip"
         path_s = None
+        from_conf = False
         try:
-            path_s = args.path_s if args.path_s else config["BACKUPS"]["path_s"]
+            if args.path_s:
+                path_s = args.path_s
+            else:
+                # If this succeeds value comes from config
+                path_s = config["BACKUPS"]["path_s"]
+                from_conf = True
             # Check if path_s is not an empty string
-            if path_s == "" or path_s == " ":
-                raise ValueError
-        except Exception as e:
+            if path_s == "" or path_s == " " or not path_s:
+                raise KeyError
+        except KeyError:
             logger.critical("Missing path values, exiting...")
             sys.exit(1)
-        # Try to split path
-        path_s = path_s.split(" ") if " " in path_s else path_s.split("\n")
+        # If value is from config split by new lines else comes from cli split by commas
+        if from_conf:
+            path_s = path_s.split("\n")
+        else:
+            path_s = path_s.split(",")
         # Remove any possible whitespaces
-        path_s = [v for v in path_s if v != ""]
+        path_s = [v.strip() for v in path_s if v != "" or v != " "]
         self.path_s = path_s
         self.add_date = self.set_or_default("add_date")
         d_format = self.set_or_default("date_format")
@@ -32,8 +41,20 @@ class BackupManager(object):
         self.tmp_dir = os.path.abspath(u_path)
         logger.info("BackupManager initialized\n")
 
+    # TODO: Run this function only once when path_s are set and replace path_s
+    def clean_path(self, p_loc):
+        if '"' in p_loc:
+            p_loc = p_loc.replace('"', '')
+        elif "'" in p_loc:
+            p_loc = p_loc.replace("'", "")
+        return p_loc
+
     # For setting defaults when values are missing
     def set_or_default(self, name):
+        # Raise KeyError on empty value
+        def raise_on_empty_val(val):
+            if val == "" or val == " " or not val:
+                raise KeyError
         vals = {
             "add_date": True,
             "temp": "temp",
@@ -46,8 +67,6 @@ class BackupManager(object):
         try:
             if name == "temp":
                 val = self.u_args.temp if self.u_args.temp else self.config["BACKUPS"]["temp"]
-                if not val:
-                    val = "temp"
             elif name == "add_date":
                 val = self.u_args.add_date if self.u_args.add_date else self.config["BACKUPS"]["add_date"]
                 val = True if val == "y" else False
@@ -63,8 +82,8 @@ class BackupManager(object):
                 val = self.u_args.over_creds if self.u_args.over_creds else self.config["BACKUPS"]["over_creds"]
             elif name == "dest_folder":
                 val = self.u_args.dest_folder if self.u_args.dest_folder else self.config["BACKUPS"]["dest_folder"]
-            if val == "" or val == " ":
-                raise KeyError
+            # Raise if value  is empty
+            raise_on_empty_val(val)
         except KeyError:
             self.logger.debug("Missing parameter from config and arguments: %s\nSetting to default: %s" % (name, vals[name]))
             return vals[name]
@@ -80,6 +99,8 @@ class BackupManager(object):
         if isinstance(path_s, list):
             f_list = { v:True for v in path_s}
             for src in path_s:
+                # Remove quotes
+                src = self.clean_path(src)
                 src = os.path.abspath(src)
                 check = os.path.isdir if os.path.isdir(src) else os.path.isfile
                 if not check(src):
@@ -91,6 +112,7 @@ class BackupManager(object):
                 self.logger.critical("Missing path, cannot resume: Not implemented\n")
                 return False
         else:
+            path_s = self.clean_path(path_s)
             check = os.path.isdir if os.path.isdir(path_s) else os.path.isfile
             if not check(path_s):
                 self.logger.critical("Cant find path %s\n" % (path_s))
@@ -107,26 +129,44 @@ class BackupManager(object):
             shutil.rmtree(self.tmp_dir)
         tmp_dir = os.path.abspath(self.tmp_dir)
         if not isinstance(path_s, list):
+            path_s = self.clean_path(path_s)
             n_tmp_dir = tmp_dir
             abspath_s = os.path.abspath(path_s)
             d_copy = shutil.copytree if os.path.isdir(abspath_s) else shutil.copy
             if d_copy == shutil.copy:
                 if not os.path.isdir(self.tmp_dir):
-                    os.mkdir(self.tmp_dir)
+                    try:
+                        os.mkdir(self.tmp_dir)
+                    except PermissionError:
+                        self.logger.critical("Failed to create temporary directory: Permission error\n")
+                        sys.exit(1)
                 n_tmp_dir = "%s/%s" % (tmp_dir, path_s)
             self.logger.debug("Copying from %s to %s" % (abspath_s, n_tmp_dir))
-            d_copy(path_s, n_tmp_dir)
+            try:
+                d_copy(path_s, n_tmp_dir)
+            except PermissionError:
+                self.logger.critical("Failed to copy: Permission error")
+                sys.exit(1)
         else:
             for src in path_s:
+                src = self.clean_path(src)
                 n_tmp_dir = tmp_dir
                 abssrc = os.path.abspath(src)
                 d_copy = shutil.copytree if os.path.isdir(abssrc) else shutil.copy
                 if d_copy == shutil.copy:
                     if not os.path.isdir(self.tmp_dir):
-                        os.mkdir(self.tmp_dir)
+                        try:
+                            os.mkdir(self.tmp_dir)
+                        except PermissionError:
+                            self.logger.critical("Failed to create temporary directory: Permission error\n")
+                            sys.exit(1)
                     n_tmp_dir = "%s/%s" % (tmp_dir, src)
                 self.logger.debug("Copying from %s to %s" % (abssrc, n_tmp_dir))
-                d_copy(abssrc, n_tmp_dir)
+                try:
+                    d_copy(abssrc, n_tmp_dir)
+                except PermissionError:
+                    self.logger.critical("Failed to copy: Permission error")
+                    sys.exit(1)
 
     # Make a zip archive
     def make_zip(self):
@@ -140,12 +180,16 @@ class BackupManager(object):
             u_str = cdt.strftime(self.date_format)
             cdt_str = "%s_%sH_%sm" % (u_str, cdt.hour, cdt.minute)
             f_str = "%s__%s.zip" % ( self.z_name.replace(".zip", ""), cdt_str)
+            relroot = os.path.abspath(os.path.join(src, os.pardir))
             zf = zipfile.ZipFile(f_str, "w", zipfile.ZIP_DEFLATED)
             try:
                 for root, dirs, files in os.walk(src):
+                    zf.write(root, os.path.relpath(root, relroot))
                     for file in files:
-                        n_root = os.path.basename(os.path.normpath(root))
-                        zf.write(os.path.join(root, file), "%s/%s" % (n_root, file))
+                        filename = os.path.join(root, file)
+                        if os.path.isfile(filename): # regular files only
+                            arcname = os.path.join(os.path.relpath(root, relroot), file)
+                            zf.write(filename, arcname)
                 zf.close()
                 try:
                     shutil.rmtree(src)
