@@ -1,7 +1,5 @@
-import keyring, logging, getpass, sys, dropbox, os, re
-import onedrivesdk
+import keyring, logging, getpass, sys, dropbox, os, re, onedrivesdk
 from onedrivesdk.helpers import GetAuthCodeServer
-
 from dropbox.files import WriteMode
 
 class BackendManager(object):
@@ -49,7 +47,7 @@ class BackendManager(object):
                 name = last
         return lowest
 
-
+    # Check if authentication is successfull
     def check_and_auth(self, overwrite="n"):
         self.logger.info("Checking and setting credentials\n")
         def db_creds():
@@ -166,14 +164,33 @@ class BackendManager(object):
                         with open(l_path, "rb") as f:
                             self.api_end.files_upload(f.read(), db_path, mode=WriteMode('overwrite'))
 
-
         def to_google():
             self.logger.critical("not implemented\n")
             sys.exit(1)
 
         def to_onedrive():
-            self.logger.critical("not implemented\n")
-            sys.exit(1)
+            u_path = self.u_path if not src else src
+            u_path = os.path.abspath(u_path)
+            if os.path.isfile(u_path):
+                self.logger.info("Src is file: %s" % (u_path))
+                f_name = os.path.basename(u_path)
+                collection = client.item(drive='me', id='root').children.request(top=3).get()
+                exit(0)
+                with open(u_path, "rb") as f:
+                    db_path = dest.lower()
+                    db_path = "/%s" % (db_path)
+                    f_path = "%s/%s" % (db_path, f_name)
+                    list_d = [entry.name for entry in self.api_end.files_list_folder('').entries]
+                    if dest.lower() not in list_d:
+                        self.api_end.files_create_folder(db_path)
+                    self.api_end.files_upload(f.read(), f_path, mode=WriteMode('overwrite'))
+            else:
+                for root, dirs, files in os.walk(u_path):
+                    for f in files:
+                        l_path = os.path.join(root, f)
+                        db_path = "/%s/%s" % (dest.lower(), f)
+                        with open(l_path, "rb") as f:
+                            self.api_end.files_upload(f.read(), db_path, mode=WriteMode('overwrite'))
 
         funcs = {
         "db": to_dropbox,

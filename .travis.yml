@@ -1,33 +1,21 @@
 matrix:
   include:
-  - os: linux
-    language: python
-    sudo: required
-    dist: xenial
-    python: '3.7'
-    env:
-    - PY=python3
-    - UPX_PATH="$PWD"/UPX
-  - os: windows
-    language: shell
-    python: 3.7
-    env:
-    - PY=py
-    - UPX_PATH=$(PWD)/UPX
-
-before_install:
-- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-    ./scripts/osx_before_install.sh;
-  elif [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-    ./scripts/win_before_install.sh;
-  fi
-
-install:
-- "$PY -m pip install -r requirements.txt"
-
-script:
-- $PY -m unittest discover tests/ "*_test.py"
-- "$PY pyinstaller.py"
+    - stage: Linux build
+      language: python
+      os: linux
+      sudo: required
+      dist: xenial
+      python: '3.7'
+      env:
+      - PY=python3
+      - UPX_PATH="$PWD"/UPX
+    - stage: Windows build
+      os: windows
+      language: shell
+      python: 3.7
+      env:
+      - PY=py
+      - UPX_PATH="$PWD"/UPX
 
 deploy:
   provider: releases
@@ -38,4 +26,21 @@ deploy:
   file: dist/*
   draft: true
   on:
+    tags: true
     repo: hallowf/py-backs-cli
+
+before_install:
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+    ./scripts/osx_before_install.sh;
+  elif [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+    ./scripts/lin_before_install.sh;
+  elif [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+    ./scripts/win_before_install.sh;
+  fi
+
+install:
+- "$PY -m pip install -r requirements.txt"
+
+script:
+- $PY -m unittest discover tests/ "*_test.py"
+- "$PY pyinstaller.py"

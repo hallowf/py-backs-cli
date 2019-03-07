@@ -4,6 +4,7 @@ import os, shutil
 UPX_PATH = os.environ["UPX_PATH"]
 CWD = os.path.dirname(os.path.abspath(__file__))
 
+c_plat = platform.system().lower()
 
 PyInstaller.__main__.run([
         '--noconfirm',
@@ -15,13 +16,16 @@ PyInstaller.__main__.run([
     ])
 
 
+# Only run this on last stage which is windows build stage
 # Add other to dist
 to_add = {
     "backups.ini.template": "cli/backups.ini.template",
 }
-t_dest = "%s/dist/" % (CWD)
 
-for f in to_add:
-    f_src = "%s/%s" % (CWD, to_add[f])
-    f_dest = t_dest + f
-    shutil.copyfile(f_src, f_dest)
+t_dest = "%s/dist/" % (CWD)
+if c_plat == "windows":
+    for f in to_add:
+        f_src = "%s/%s" % (CWD, to_add[f])
+        f_dest = t_dest + f
+        if not os.path.isfile(f_dest):
+            shutil.copyfile(f_src, f_dest)
