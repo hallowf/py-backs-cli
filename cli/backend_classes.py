@@ -11,7 +11,10 @@ class BackendManager(object):
         self.logger = logging.getLogger("Backend Manager")
         self.api_end = None
         self.client_id = c_id
+        self.logger.debug("Reseting loggers from other dependencies")
         self.reset_o_loggers()
+        self.logger.info("Checking upload src\n")
+        self.check_src()
 
     # Reset other loggers
     def reset_o_loggers(self):
@@ -46,6 +49,23 @@ class BackendManager(object):
                 lowest = self.return_low_date(lowest, name)
                 name = last
         return lowest
+
+    def check_src(self, n_src=None):
+        src = n_src or self.u_path
+        d_items = os.listdir(src)
+        if len(d_items) == 1:
+            n_path = os.path.join(src, d_items[0])
+            if os.path.isdir(n_path):
+                self.logger.debug("Shifting to: %s" % (os.path.abspath(n_path)))
+                self.check_src(n_path)
+            elif os.path.isfile(n_path):
+                self.logger.debug("Found only one file setting src to it")
+                n_path = os.path.abspath(n_path)
+                self.u_path = n_path
+        else:
+            src = os.path.abspath(src)
+            self.logger.debug("Found multiple items setting src to: %s" % (src))
+            self.u_path = src
 
     # Check if authentication is successfull
     def check_and_auth(self, overwrite="n"):
@@ -123,10 +143,14 @@ class BackendManager(object):
                 try:
                     code = GetAuthCodeServer.get_auth_code(auth_url, redirect_uri)
                     api_end.auth_provider.authenticate(code, redirect_uri, token)
-                except KeyboardInterrupt:
-                    self.logger.critical("User interrupted login\n")
-                    sys.exit(1)
-
+                except (KeyboardInterrupt, ConnectionAbortedError) as e:
+                    e_name = e.__class__.__name__
+                    if e_name == "KeyboardInterrupt":
+                        self.logger.critical("User interrupted login\n")
+                        sys.exit(1)
+                    elif e_name == "ConnectionAbortedError":
+                        self.logger.critical("Connection aborted, window was probably closed\n")
+                        sys.exit(1)
                 self.api_end = api_end
                 code = None
             except Exception:
@@ -141,7 +165,11 @@ class BackendManager(object):
 
         funcs[self.backend]()
 
+    # Function for uploading files to cloud
     def upload_file_s(self, dest,  src=None):
+        if "/" in dest:
+            self.logger.critical("Destination with path separator is not supported at the moment\n")
+            sys.exit(1)
         def to_dropbox():
             u_path = self.u_path if not src else src
             u_path = os.path.abspath(u_path)
@@ -169,12 +197,43 @@ class BackendManager(object):
             sys.exit(1)
 
         def to_onedrive():
-            u_path = self.u_path if not src else src
+            def find_in_colls(prev_col=None):
+                self.logger.debug("Paging trough collections\n")
+                coll = None
+                if prev_col:
+                    coll = collection2 = onedrivesdk.ChildrenCollectionRequest.get_next_page_request(prev_col, client).get()
+                else:
+                    coll = self.api_end.item(drive='me', id='root').children.request(top=1).get()
+                names = [n.name for n in coll]
+                end = True if len(coll) != 5 else False
+                found = True if dest in names else False
+                if end and not found:
+                    self.logger.debug("Couldn't find destination in collections")
+                    return False
+                elif found:
+                    return True
+                elif end:
+                    self.logger.debug("Collection has ended")
+                    return False
+                else:
+                    self.logger.debug("Collection has ended, but there might be more pages retrying")
+                    return find_in_colls(coll)
+            u_path = src or self.u_path
             u_path = os.path.abspath(u_path)
             if os.path.isfile(u_path):
                 self.logger.info("Src is file: %s" % (u_path))
                 f_name = os.path.basename(u_path)
-                collection = client.item(drive='me', id='root').children.request(top=3).get()
+                if not find_in_colls():
+                    self.logger.info("Your destination does not exist, creating it now...\n")
+                    f = onedrivesdk.Folder()
+                    i = onedrivesdk.Item()
+                    i.name = dest
+                    i.folder = f
+                    try:
+                        returned_item = self.api_end.item(drive='me', id='root').children.add(i)
+                    except Exception as e:
+                        self.logger.critical("Error creating folder\n")
+                        sys.exit(1)
                 exit(0)
                 with open(u_path, "rb") as f:
                     db_path = dest.lower()
