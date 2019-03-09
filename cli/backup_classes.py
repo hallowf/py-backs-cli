@@ -2,7 +2,7 @@ import os, zipfile, zlib, datetime, shutil, sys, re
 
 class BackupManager(object):
     """docstring for BackupManager."""
-    def __init__(self, args, logger, config):
+    def __init__(self, args, logger, config, defaults):
         super(BackupManager, self).__init__()
         self.u_args = args
         self.logger = logger
@@ -33,12 +33,9 @@ class BackupManager(object):
         # Remove any possible whitespaces
         path_s = [v.strip() for v in path_s if v != "" or v != " "]
         self.path_s = path_s
-        self.add_date = self.set_or_default("add_date")
-        d_format = self.set_or_default("date_format")
-        d_format = d_format.replace("&", "%")
-        self.date_format = d_format
-        u_path = self.set_or_default("temp")
-        self.tmp_dir = os.path.abspath(u_path)
+        self.add_date = defaults["add_date"]
+        self.date_format = defaults["date_format"]
+        self.tmp_dir = os.path.abspath(defaults["temp"])
         logger.info("BackupManager initialized\n")
 
     # TODO: Run this function only once when path_s are set and replace path_s
@@ -48,46 +45,6 @@ class BackupManager(object):
         elif "'" in p_loc:
             p_loc = p_loc.replace("'", "")
         return p_loc
-
-    # For setting defaults when values are missing
-    def set_or_default(self, name):
-        # Raise KeyError on empty value
-        def raise_on_empty_val(val):
-            if val == "" or val == " " or not val:
-                raise KeyError
-        vals = {
-            "add_date": True,
-            "temp": "temp",
-            "date_format": "&d-&m-&Y",
-            "make_zip": "y",
-            "over_creds": "n",
-            "dest_folder": "PYBCLI",
-        }
-        val = None
-        try:
-            if name == "temp":
-                val = self.u_args.temp if self.u_args.temp else self.config["BACKUPS"]["temp"]
-            elif name == "add_date":
-                val = self.u_args.add_date if self.u_args.add_date else self.config["BACKUPS"]["add_date"]
-                val = True if val == "y" else False
-            elif name == "date_format":
-                d_formats = ["&d-&m-&Y", "&d-&Y-&m" "&m-&d-&Y", "&m-&Y-&d", "&Y-&m-&d", "&Y-&d-&m"]
-                val = self.u_args.date_format if self.u_args.date_format else str(self.config["BACKUPS"]["date_format"])
-                if val not in d_formats:
-                    self.logger.debug("Invalid date format %s\n" % (val))
-                    raise KeyError
-            elif name == "make_zip":
-                val = self.u_args.make_zip if self.u_args.make_zip else self.config["BACKUPS"]["make_zip"]
-            elif name == "over_creds":
-                val = self.u_args.over_creds if self.u_args.over_creds else self.config["BACKUPS"]["over_creds"]
-            elif name == "dest_folder":
-                val = self.u_args.dest_folder if self.u_args.dest_folder else self.config["BACKUPS"]["dest_folder"]
-            # Raise if value  is empty
-            raise_on_empty_val(val)
-        except KeyError:
-            self.logger.debug("Missing parameter from config and arguments: %s\nSetting to default: %s" % (name, vals[name]))
-            return vals[name]
-        return val
 
     # Check if paths exist
     def check_paths(self):
