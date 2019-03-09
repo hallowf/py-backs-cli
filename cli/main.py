@@ -40,11 +40,12 @@ def run_main():
     b_manager = BackupManager(args, logger, config, defaults)
     if not b_manager.check_paths():
         sys.exit(1)
-    b_manager.call_copy()
+    # b_manager.call_copy()
     # If specified make a zip file
     make_zip = defaulter.set_or_default("make_zip")
     if make_zip == "y":
-        b_manager.make_zip()
+        print("ZIPOFF")
+        # b_manager.make_zip()
     if args.backend == "local":
         logger.info("Finished\n")
         sys.exit(0)
@@ -67,9 +68,8 @@ def run_main():
                 logger.critical("This backend requires a client id\n")
                 sys.exit(1)
         # Release BackupManager Start BackendManager
-        b_manager = BackendManager(args.backend, tmp_dir, c_id)
-        b_manager.check_and_auth(over_creds)
-        b_manager.upload_file_s(dest)
+        b_manager = BackendManager(args.backend, tmp_dir, dest, c_id)
+        # b_manager.check_and_auth(over_creds)
         logger.info("Finished\n")
 
 
