@@ -69,6 +69,7 @@ class BackendManager(object):
                 name = last
         return lowest
 
+    # List src if only one folder is found iterate until multiple items are found
     def check_src(self, n_src=None):
         src = n_src or self.u_path
         d_items = os.listdir(src)
@@ -88,7 +89,7 @@ class BackendManager(object):
 
     # Check if authentication is successfull
     def run_backend(self):
-        self.logger.info()
+        self.logger.info("Trying to authenticate\n")
         try:
             self.current_backend.check_token()
         except (PasswordSetError, AuthenticationError, KeyboardInterrupt) as e:
@@ -97,7 +98,7 @@ class BackendManager(object):
                 self.logger.info("Error setting password with keyring\n")
             elif e_name == "AuthenticationError":
                 self.logger.info("Error trying to authenticate\n")
-            elif e_name == "KeyboardInterrupt"
+            elif e_name == "KeyboardInterrupt":
                 self.logger.info("User interrupted authentication\n")
             sys.exit(1)
 
@@ -106,28 +107,29 @@ class BackendManager(object):
 ################ Backends -----------------------
 
 class DBBackend(object):
-    """docstring for DBBackend."""
+    """Dropbox backend"""
     def __init__(self, src, dest):
         super(DBBackend, self).__init__()
         self.u_path = src
         self.dest = dest
         self.api_end = None
 
+    # Gets token and tries to authenticate
     def check_token(self):
-            if not keyring.get_password("dropbox", "api") or overwrite == "y":
-                sys.stdout.write("Please provide a token\n")
-                passwd = getpass.getpass("Token: ")
-                try:
-                    keyring.set_password("dropbox", "api", "%s" % (passwd))
-                except PasswordSetError:
-                    raise PasswordSetError
+        if not keyring.get_password("dropbox", "api") or overwrite == "y":
+            sys.stdout.write("Please provide a token\n")
+            passwd = getpass.getpass("Token: ")
+            try:
+                keyring.set_password("dropbox", "api", "%s" % (passwd))
+            except PasswordSetError:
+                raise PasswordSetError
         # Authenticate and release token
         try:
             self.try_auth(keyring.get_password("dropbox", "api"))
         except AuthenticationError:
             raise AuthenticationError
 
-
+    # Called by check_token
     def try_auth(self, token):
         api_end = dropbox.Dropbox(token)
         try:
@@ -162,29 +164,30 @@ class DBBackend(object):
 
 
 class MODBackend(object):
-    """docstring for MODBackend."""
+    """Onedrive backend, requires client_id"""
     def __init__(self, src, dest, client_id):
         super(MODBackend, self).__init__()
         self.u_path = src
         self.dest = dest
         self.client_id = client_id
+        self.api_end = None
 
-    def check_auth(self):
+    # Gets token and tries to authenticate
+    def check_token(self):
         self.logger.info("Provider is: Microsoft onedrive\n")
-        u_token = None
-            u_token = keyring.get_password("onedrive", self.client_id)
-            if not u_token or overwrite == "y":
-                sys.stdout.write("Please provide a secret key\n")
-                passwd = getpass.getpass("Secret: ")
-                try:
-                    keyring.set_password("onedrive", self.client_id, "%s" % (passwd))
-                except PasswordSetError:
-                    raise PasswordSetError
+        if not keyring.get_password("onedrive", self.client_id) or overwrite == "y":
+            sys.stdout.write("Please provide a secret key\n")
+            passwd = getpass.getpass("Secret: ")
+            try:
+                keyring.set_password("onedrive", self.client_id, "%s" % (passwd))
+            except PasswordSetError:
+                raise PasswordSetError
         try:
             self.try_auth(keyring.get_password("onedrive", self.client_id))
         except (KeyboardInterrupt, AuthenticationError) as e:
             raise e
 
+    # Called by check_token
     def try_auth(self):
         redirect_uri = 'http://localhost:8080/'
         scopes=['wl.signin', 'wl.offline_access', 'onedrive.readwrite']

@@ -69,6 +69,7 @@ def run_main():
                 sys.exit(1)
         # Release BackupManager Start BackendManager
         b_manager = BackendManager(args.backend, tmp_dir, dest, c_id)
+        b_manager.run_backend()
         # b_manager.check_and_auth(over_creds)
         logger.info("Finished\n")
 
